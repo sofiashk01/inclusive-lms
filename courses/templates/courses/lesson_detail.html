@@ -105,8 +105,10 @@
                         <h4 class="text-primary">{{ lesson.title }}</h4>
 
                         <video id="courseVideo" width="100%" controls preload="auto" class="mt-3 rounded bg-dark">
-                            <source src="http://127.0.0.1:8080/{{ lesson.video_file.name }}" type="video/mp4">
-                            <track id="subTrack" src="{{ lesson.subtitle_file.url }}" kind="subtitles" srclang="uk" label="Українська" default>
+                            <source src="{{ lesson.video_file.url }}" type="video/mp4">
+                            {% if lesson.subtitle_file %}
+                                <track id="subTrack" src="{{ lesson.subtitle_file.url }}" kind="subtitles" srclang="uk" label="Українська" default>
+                            {% endif %}
                             Ваш браузер не підтримує відео.
                         </video>
 
@@ -117,6 +119,15 @@
                         <button id="focusToggle" class="btn btn-outline-dark btn-lg mt-3 w-100 fw-bold">👁️ Режим фокусу (Focus Mode)</button>
                     </div>
                 </div>
+
+                {% if lesson.transcript_text %}
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-body bg-light">
+                        <h5 class="text-primary">📝 Текстовий конспект лекції</h5>
+                        <div class="mt-3 text-dark" style="white-space: pre-wrap;">{{ lesson.transcript_text }}</div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <div class="col-lg-4 mb-4">
@@ -156,7 +167,6 @@
     }
 
     if (video) {
-        // Фіксуємо, коли починається і закінчується перемотка
         video.addEventListener('seeking', () => { isSeeking = true; });
         video.addEventListener('seeked', () => { isSeeking = false; });
 
@@ -171,19 +181,22 @@
         video.addEventListener('ended', () => {
             triggerVisualAlert('🎉 Лекцію завершено! Ваш прогрес збережено.', '#198754', '#fff');
 
-            const csrfToken = document.querySelector('#logoutForm [name=csrfmiddlewaretoken]').value;
-
-            fetch(`/lesson/{{ lesson.id }}/complete/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({})
-            })
-            .then(response => response.json())
-            .then(data => console.log('Server response:', data))
-            .catch(error => console.error('Error saving progress:', error));
+            // Захист: Перевіряємо, чи існує форма виходу, перш ніж брати токен
+            const logoutForm = document.querySelector('#logoutForm [name=csrfmiddlewaretoken]');
+            if (logoutForm) {
+                const csrfToken = logoutForm.value;
+                fetch(`/lesson/{{ lesson.id }}/complete/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => console.log('Server response:', data))
+                .catch(error => console.error('Error saving progress:', error));
+            }
         });
     }
 
@@ -201,10 +214,12 @@
     }
 
     let trackLoadInterval = setInterval(() => {
-        const textTrack = video.textTracks[0];
-        if (textTrack && textTrack.cues && textTrack.cues.length > 0) {
-            clearInterval(trackLoadInterval);
-            buildSmartTranscript(textTrack);
+        if (video && video.textTracks && video.textTracks.length > 0) {
+            const textTrack = video.textTracks[0];
+            if (textTrack && textTrack.cues && textTrack.cues.length > 0) {
+                clearInterval(trackLoadInterval);
+                buildSmartTranscript(textTrack);
+            }
         }
     }, 500);
 
