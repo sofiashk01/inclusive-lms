@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Інклюзивна Платформа{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body.a11y-text-large { font-size: 1.15rem; }
+        body.a11y-text-xl { font-size: 1.35rem; }
+
+        body.a11y-font-bold * { font-weight: 600 !important; }
+        body.a11y-font-dyslexic * {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif !important;
+            letter-spacing: 0.1em !important;
+            word-spacing: 0.2em !important;
+        }
+
+        body.a11y-subs-large .cue-item { font-size: 1.25rem !important; }
+        body.a11y-subs-xl .cue-item { font-size: 1.5rem !important; }
+
+        .a11y-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            border-radius: 50%;
+            width: 65px;
+            height: 65px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 1050;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+        .a11y-fab:hover { transform: scale(1.1); }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+    {% load role_tags %}
+
+    <nav class="navbar navbar-dark bg-primary shadow-sm mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">🎓 Моя Дипломна Платформа</a>
+
+            <div class="d-flex text-white align-items-center">
+                {% if user.is_authenticated %}
+                    <span class="me-3 small">Вітаємо, <b>{{ user.username }}</b></span>
+
+                    {% if user|has_role:"Teachers" %}
+                        <a href="/admin/courses/course/" class="btn btn-warning btn-sm me-2">⚙️ Керування курсами</a>
+                        <a href="/analytics/" class="btn btn-info btn-sm me-2">📊 Аналітика</a>
+                    {% elif user|has_role:"Students" %}
+                        <a href="/dashboard/" class="btn btn-light btn-sm me-2">📚 Моє навчання</a>
+                    {% endif %}
+
+                    {% if request.path != '/' %}
+                        <a href="/" class="btn btn-outline-light btn-sm me-2">Всі курси</a>
+                    {% endif %}
+
+                    <form method="post" action="/accounts/logout/" class="d-inline" id="logoutForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="/">
+                        <button type="submit" class="btn btn-outline-light btn-sm">Вийти</button>
+                    </form>
+                {% else %}
+                    <a href="/accounts/login/?next={{ request.path }}" class="btn btn-light btn-sm">Увійти</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    {% block content %}
+    {% endblock %}
+
+    <footer class="bg-dark text-light py-5 mt-auto">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <h5 class="text-white fw-bold mb-3">🎓 Інклюзивна Платформа</h5>
+                    <p class="small text-muted mb-0">Розроблено як дипломний проєкт для забезпечення безбар'єрного доступу до якісної освіти.</p>
+                    <p class="small text-muted mt-2">&copy; 2026. Всі права захищено.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h5 class="text-white fw-bold mb-3">🛠 Технічна підтримка</h5>
+                    <p class="small text-muted mb-1">Знайшли помилку чи маєте пропозиції?</p>
+                    <button class="btn btn-outline-light btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#supportModal">✉️ Написати нам</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal fade" id="supportModal" tabindex="-1" aria-labelledby="supportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="supportModalLabel">✉️ Зворотний зв'язок</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">Знайшли технічну помилку або маєте пропозиції щодо роботи платформи? Напишіть нам, і ми відповімо вам на email.</p>
+
+                    <form action="{% url 'submit_support' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-secondary">Ваше ім'я</label>
+                            <input type="text" name="name" class="form-control" required placeholder="Наприклад, Олена">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-secondary">Ваш Email</label>
+                            <input type="email" name="email" class="form-control" required placeholder="name@example.com">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary">Повідомлення</label>
+                            <textarea name="message" class="form-control" rows="4" required placeholder="Опишіть вашу проблему..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2" onclick="alert('Дякуємо! Ваше звернення успішно надіслано. Адміністратор зв\'яжеться з вами найближчим часом.');">
+                            🚀 Надіслати звернення
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-primary a11y-fab" type="button" data-bs-toggle="offcanvas" data-bs-target="#a11yPanel" aria-controls="a11yPanel" title="Налаштування доступності">
+        👓
+    </button>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="a11yPanel" aria-labelledby="a11yPanelLabel">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title fw-bold" id="a11yPanelLabel">👓 Налаштування доступності</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Закрити"></button>
+        </div>
+        <div class="offcanvas-body">
+            <p class="text-muted small">Ці налаштування будуть збережені для вашого браузера автоматично.</p>
+
+            <div class="mb-4">
+                <label class="fw-bold mb-2">Розмір тексту на сайті</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="setA11y('text', 'normal')">А</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="setA11y('text', 'large')">А+</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="setA11y('text', 'xl')">А++</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="fw-bold mb-2">Розмір інтерактивних субтитрів</label>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-success" onclick="setA11y('subs', 'normal')">Т</button>
+                    <button type="button" class="btn btn-outline-success" onclick="setA11y('subs', 'large')">Т+</button>
+                    <button type="button" class="btn btn-outline-success" onclick="setA11y('subs', 'xl')">Т++</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="fw-bold mb-2">Шрифт та накреслення</label>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="boldSwitch" onchange="toggleA11y('bold', this.checked)">
+                    <label class="form-check-label" for="boldSwitch">Потовщений текст (Bold)</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="dyslexicSwitch" onchange="toggleA11y('dyslexic', this.checked)">
+                    <label class="form-check-label" for="dyslexicSwitch">Шрифт для дислексії (покращує читабельність)</label>
+                </div>
+            </div>
+
+            <button class="btn btn-outline-danger w-100 mt-3" onclick="resetA11y()">Скинути всі налаштування</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function applyA11yPreferences() {
+            const textSize = localStorage.getItem('a11y_text') || 'normal';
+            const subsSize = localStorage.getItem('a11y_subs') || 'normal';
+            const isBold = localStorage.getItem('a11y_bold') === 'true';
+            const isDyslexic = localStorage.getItem('a11y_dyslexic') === 'true';
+
+            setA11yClass('text', textSize);
+            setA11yClass('subs', subsSize);
+            toggleA11yClass('bold', isBold);
+            toggleA11yClass('dyslexic', isDyslexic);
+
+            const boldSwitch = document.getElementById('boldSwitch');
+            if (boldSwitch) boldSwitch.checked = isBold;
+            const dyslexicSwitch = document.getElementById('dyslexicSwitch');
+            if (dyslexicSwitch) dyslexicSwitch.checked = isDyslexic;
+        }
+
+        function setA11y(type, value) {
+            localStorage.setItem(`a11y_${type}`, value);
+            setA11yClass(type, value);
+        }
+
+        function setA11yClass(type, value) {
+            document.body.classList.remove(`a11y-${type}-large`, `a11y-${type}-xl`);
+            if (value !== 'normal') {
+                document.body.classList.add(`a11y-${type}-${value}`);
+            }
+        }
+
+        function toggleA11y(type, isChecked) {
+            localStorage.setItem(`a11y_${type}`, isChecked);
+            toggleA11yClass(type, isChecked);
+        }
+
+        function toggleA11yClass(type, isChecked) {
+            if (isChecked) {
+                document.body.classList.add(`a11y-font-${type}`);
+            } else {
+                document.body.classList.remove(`a11y-font-${type}`);
+            }
+        }
+
+        function resetA11y() {
+            localStorage.clear();
+            applyA11yPreferences();
+        }
+
+        document.addEventListener('DOMContentLoaded', applyA11yPreferences);
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

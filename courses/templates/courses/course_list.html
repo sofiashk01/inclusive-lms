@@ -1,0 +1,182 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}Головна - Інклюзивна Освітня Платформа{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-bg {
+        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+        color: white;
+        border-radius: 15px;
+    }
+    .icon-box {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-5 bg-light rounded-3 shadow-sm mt-3 border-start border-5 border-primary">
+    <div class="container-fluid py-2">
+        <h1 class="display-5 fw-bold text-dark">Інклюзивна освітня платформа</h1>
+        <p class="col-md-10 fs-5 mt-3 text-secondary">
+            Інноваційний інструмент для освітнього середовища кафедри економічної інформатики <strong>Українського державного університету науки і технологій</strong>. Наша місія — забезпечення абсолютно безбар'єрного навчання через впровадження математично обґрунтованих стандартів доступності (WCAG).
+        </p>
+        <a href="#courses-section" class="btn btn-primary btn-lg mt-3 fw-bold shadow-sm">Переглянути курси 📚</a>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <h2 class="text-center mb-4 text-dark fw-bold">🌟 Чому наша платформа унікальна?</h2>
+    <div class="row text-center g-4 mt-2">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="icon-box">💬</div>
+                    <h5 class="fw-bold">Розумні субтитри</h5>
+                    <p class="text-muted small">Інтерактивний текстовий конспект із можливістю швидкої навігації по таймкодах відео. Допомагає засвоювати матеріал у власному темпі.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="icon-box">👁️</div>
+                    <h5 class="fw-bold">Режим фокусу</h5>
+                    <p class="text-muted small">Мінімізація когнітивного навантаження: приховування зайвих візуальних елементів для глибокого занурення в навчальний процес.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="icon-box">🔔</div>
+                    <h5 class="fw-bold">Візуальні сповіщення</h5>
+                    <p class="text-muted small">Адаптація для осіб з порушеннями слуху завдяки динамічним графічним тригерам під час пауз або завершення лекцій.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="courses-section" class="container mb-5 pt-4">
+    <h2 class="text-dark mb-4 fw-bold border-bottom pb-2">📖 Доступні курси</h2>
+    <div class="row">
+        {% for course in courses %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-body d-flex flex-column">
+                        <h4 class="card-title text-primary fw-bold">{{ course.title }}</h4>
+                        <p class="card-text text-muted mb-4" style="flex-grow: 1;">{{ course.description|truncatewords:20 }}</p>
+                        <a href="{% url 'lesson_detail' course.id %}" class="btn btn-outline-primary w-100 fw-bold">Відкрити курс →</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center py-4">
+                <p class="text-muted">Наразі немає опублікованих курсів. Загляньте сюди згодом!</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="stat-bg p-5 shadow">
+        <div class="row text-center">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h2 class="display-4 fw-bold counter" data-target="100">0</h2>
+                <span class="fs-5 opacity-75">% Гарантія WCAG</span>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h2 class="display-4 fw-bold counter" data-target="80">0</h2>
+                <span class="fs-5 opacity-75">Політика I_inc (відсоток)</span>
+            </div>
+            <div class="col-md-4">
+                <h2 class="display-4 fw-bold counter" data-target="24">0</h2>
+                <span class="fs-5 opacity-75">Години підтримки (24/7)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5 pb-4">
+    <h2 class="text-center mb-4 text-dark fw-bold">❓ Часті запитання</h2>
+    <div class="accordion shadow-sm" id="faqAccordion">
+
+        <div class="accordion-item border-0 border-bottom">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button collapsed fw-bold bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    Як оцінюється інклюзивність курсів на платформі?
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Система використовує авторську математичну модель багатокритеріальної оптимізації. Кожен курс отримує <strong>Індекс інклюзивної доступності (I_inc)</strong>. Якщо індекс становить менше 80%, платформа автоматично блокує публікацію курсу, вимагаючи від викладача додати необхідні субтитри та візуальні сповіщення.
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item border-0 border-bottom">
+            <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed fw-bold bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    Що таке "Режим фокусу" і як він працює?
+                </button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Режим фокусу — це спеціальний інструмент для зменшення когнітивного навантаження. Натиснувши кнопку під відео, користувач активує темну тему, а всі зайві панелі навігації приховуються, дозволяючи зосередитися виключно на контенті лекції та текстовому конспекті.
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item border-0">
+            <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed fw-bold bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    Як завантажити лабораторну роботу на перевірку?
+                </button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Для цього перейдіть у свій <strong>Кабінет студента (Моє навчання)</strong>. Прокрутіть сторінку вниз до розділу "Модуль практичної підготовки". Ознайомтеся з методичками від викладача, заповніть коротку форму, прикріпіть файл (документ або архів) та натисніть "Завантажити на перевірку".
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const counters = document.querySelectorAll('.counter');
+        const speed = 50; // Чим менше, тим швидше
+
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = +counter.getAttribute('data-target');
+                const count = +counter.innerText;
+                const inc = target / speed;
+
+                if (count < target) {
+                    counter.innerText = Math.ceil(count + inc);
+                    setTimeout(updateCount, 20);
+                } else {
+                    counter.innerText = target + (counter.getAttribute('data-target') == '100' ? '%' : '');
+                }
+            };
+
+            // Запускаємо анімацію, коли користувач докручує до блоку
+            let observer = new IntersectionObserver(entries => {
+                if(entries[0].isIntersecting) {
+                    updateCount();
+                    observer.disconnect();
+                }
+            });
+            observer.observe(counter);
+        });
+    });
+</script>
+{% endblock %}

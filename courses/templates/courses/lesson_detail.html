@@ -1,0 +1,254 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}{{ lesson.title }} - Інклюзивна Платформа{% endblock %}
+
+{% block extra_css %}
+<style>
+    .visual-alert {
+        display: none;
+        background-color: #ffc107;
+        color: #000;
+        padding: 18px;
+        font-weight: bold;
+        border-radius: 8px;
+        margin-top: 15px;
+        animation: pulse 2.5s infinite ease-in-out;
+        z-index: 1000;
+        font-size: 1.1rem;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .visual-alert { animation: none; }
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(255, 193, 7, 0.5); }
+        100% { transform: scale(1); }
+    }
+    .cue-item {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 4px solid transparent;
+        font-size: 1.05rem;
+    }
+    .cue-item:hover {
+        background-color: #e9ecef !important;
+        border-left: 4px solid #0d6efd;
+    }
+    .cue-active {
+        background-color: #fff3cd !important;
+        border-left: 4px solid #ffc107;
+        font-weight: bold;
+    }
+    #transcriptContainer {
+        max-height: 500px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+    }
+
+    /* Focus Mode Styles */
+    .focus-mode-active {
+        background-color: #121212 !important;
+        color: #e0e0e0 !important;
+    }
+    .focus-mode-active .navbar {
+        display: none;
+    }
+    .focus-mode-active .card {
+        background-color: #1e1e1e !important;
+        border-color: #333 !important;
+    }
+    .focus-mode-active .card-header {
+        background-color: #2c2c2c !important;
+        border-bottom: 1px solid #444 !important;
+    }
+    .focus-mode-active .text-dark,
+    .focus-mode-active h2,
+    .focus-mode-active h4,
+    .focus-mode-active h5 {
+        color: #ffffff !important;
+    }
+    .focus-mode-active .bg-light,
+    .focus-mode-active .bg-white {
+        background-color: #1e1e1e !important;
+    }
+    .focus-mode-active .cue-item {
+        color: #e0e0e0;
+    }
+    .focus-mode-active .cue-item:hover {
+         background-color: #2c2c2c !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h2 class="text-dark mb-4">{{ course.title }}</h2>
+
+    {% if lesson %}
+        <div class="card shadow-sm border-0 mb-4 bg-light">
+            <div class="card-body p-3 d-flex align-items-center">
+                <span class="fw-bold me-3 text-secondary">📚 Матеріали курсу:</span>
+                <div class="btn-group flex-wrap" role="group">
+                    {% for l in all_lessons %}
+                        <a href="?lesson={{ l.id }}"
+                           class="btn btn-sm {% if l.id == lesson.id %}btn-primary fw-bold shadow-sm{% else %}btn-outline-primary{% endif %} mb-1 me-1">
+                            {{ l.title }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h4 class="text-primary">{{ lesson.title }}</h4>
+
+                        <video id="courseVideo" width="100%" controls preload="auto" class="mt-3 rounded bg-dark">
+                            <source src="http://127.0.0.1:8080/{{ lesson.video_file.name }}" type="video/mp4">
+                            <track id="subTrack" src="{{ lesson.subtitle_file.url }}" kind="subtitles" srclang="uk" label="Українська" default>
+                            Ваш браузер не підтримує відео.
+                        </video>
+
+                        <div id="visualAlert" class="visual-alert text-center" role="alert" aria-live="assertive">
+                            ⚠️ Увага! Важливий момент у лекції!
+                        </div>
+
+                        <button id="focusToggle" class="btn btn-outline-dark btn-lg mt-3 w-100 fw-bold">👁️ Режим фокусу (Focus Mode)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="text-dark">📜 Інтерактивний конспект</h5>
+                        <p class="text-muted small">Натисніть на текст, щоб перейти до моменту у відео</p>
+                    </div>
+                    <div class="card-body bg-light" id="transcriptContainer">
+                        <div class="text-center mt-5 text-muted">
+                            <div class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+                            <br>Завантаження розумних субтитрів...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const video = document.getElementById('courseVideo');
+    const visualAlert = document.getElementById('visualAlert');
+    const transcriptContainer = document.getElementById('transcriptContainer');
+    const focusToggle = document.getElementById('focusToggle');
+
+    let isSeeking = false;
+
+    function triggerVisualAlert(message, bgColor = '#ffc107', textColor = '#000') {
+        visualAlert.style.backgroundColor = bgColor;
+        visualAlert.style.color = textColor;
+        visualAlert.innerHTML = message;
+        visualAlert.style.display = 'block';
+        setTimeout(() => { visualAlert.style.display = 'none'; }, 5000);
+    }
+
+    if (video) {
+        // Фіксуємо, коли починається і закінчується перемотка
+        video.addEventListener('seeking', () => { isSeeking = true; });
+        video.addEventListener('seeked', () => { isSeeking = false; });
+
+       video.addEventListener('pause', () => {
+            setTimeout(() => {
+                if (!isSeeking && video.paused && video.currentTime > 0 && video.currentTime !== video.duration) {
+                    triggerVisualAlert('⏸️ Відео призупинено');
+                }
+            }, 100);
+        });
+
+        video.addEventListener('ended', () => {
+            triggerVisualAlert('🎉 Лекцію завершено! Ваш прогрес збережено.', '#198754', '#fff');
+
+            const csrfToken = document.querySelector('#logoutForm [name=csrfmiddlewaretoken]').value;
+
+            fetch(`/lesson/{{ lesson.id }}/complete/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => console.log('Server response:', data))
+            .catch(error => console.error('Error saving progress:', error));
+        });
+    }
+
+    if (focusToggle) {
+        focusToggle.addEventListener('click', function() {
+            document.body.classList.toggle('focus-mode-active');
+            if (document.body.classList.contains('focus-mode-active')) {
+                this.innerHTML = '☀️ Вийти з режиму фокусу';
+                this.classList.replace('btn-outline-dark', 'btn-outline-light');
+            } else {
+                this.innerHTML = '👁️ Режим фокусу (Focus Mode)';
+                this.classList.replace('btn-outline-light', 'btn-outline-dark');
+            }
+        });
+    }
+
+    let trackLoadInterval = setInterval(() => {
+        const textTrack = video.textTracks[0];
+        if (textTrack && textTrack.cues && textTrack.cues.length > 0) {
+            clearInterval(trackLoadInterval);
+            buildSmartTranscript(textTrack);
+        }
+    }, 500);
+
+    function buildSmartTranscript(textTrack) {
+        textTrack.mode = 'showing';
+        transcriptContainer.innerHTML = '';
+
+        const cuesArray = Array.from(textTrack.cues);
+
+        cuesArray.forEach((cue, index) => {
+            const cueDiv = document.createElement('div');
+            cueDiv.className = 'p-3 mb-2 bg-white rounded shadow-sm cue-item';
+            cueDiv.id = 'cue-' + index;
+
+            const minutes = Math.floor(cue.startTime / 60);
+            const seconds = Math.floor(cue.startTime % 60).toString().padStart(2, '0');
+
+            cueDiv.innerHTML = `<span class="badge bg-primary me-2">${minutes}:${seconds}</span><span class="text-dark">${cue.text}</span>`;
+
+            cueDiv.addEventListener('click', () => {
+                triggerVisualAlert(`🔄 Перехід до таймкоду: ${minutes}:${seconds}`, '#198754', '#fff');
+                video.currentTime = cue.startTime;
+                video.play();
+            });
+            transcriptContainer.appendChild(cueDiv);
+        });
+
+        textTrack.addEventListener('cuechange', () => {
+            document.querySelectorAll('.cue-item').forEach(el => {
+                el.classList.remove('cue-active', 'shadow');
+            });
+            if (textTrack.activeCues && textTrack.activeCues.length > 0) {
+                const activeCue = textTrack.activeCues[0];
+                const activeIndex = cuesArray.indexOf(activeCue);
+                if (activeIndex !== -1) {
+                    const activeDiv = document.getElementById('cue-' + activeIndex);
+                    if (activeDiv) {
+                        activeDiv.classList.add('cue-active', 'shadow');
+                        const scrollPos = activeDiv.offsetTop - (transcriptContainer.clientHeight / 2) + (activeDiv.clientHeight / 2);
+                        transcriptContainer.scrollTop = scrollPos;
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

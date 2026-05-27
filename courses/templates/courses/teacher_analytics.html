@@ -1,0 +1,178 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}Аналітика успішності - Інклюзивна Платформа{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-dark">📊 Зведена таблиця успішності студентів</h2>
+        <span class="badge bg-warning text-dark fs-6">Викладач</span>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0">
+                    <thead class="table-light text-center align-middle">
+                        <tr>
+                            <th scope="col" class="text-start ps-4">Студент</th>
+                            {% for course in courses %}
+                                <th scope="col" style="min-width: 150px;">
+                                    <div class="fw-bold fs-6">{{ course.title }}</div>
+                                    <a href="{% url 'teacher_course_dashboard' course.id %}" class="btn btn-sm btn-outline-primary mt-2" style="font-size: 0.75rem; border-radius: 20px;">
+                                        ⚙️ Інклюзивність (I_inc)
+                                    </a>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="text-center align-middle">
+                        {% for data in analytics_data %}
+                        <tr>
+                            <td class="text-start ps-4 fw-bold text-secondary">
+                                👤 {{ data.student.username }}
+                            </td>
+
+                            {% for course_data in data.progress %}
+                                <td>
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="mb-1 fw-bold {% if course_data.percent == 100 %}text-success{% elif course_data.percent > 0 %}text-primary{% else %}text-muted{% endif %}">
+                                            {{ course_data.percent }}%
+                                        </span>
+                                        <div class="progress w-75" style="height: 6px;">
+                                            <div class="progress-bar {% if course_data.percent == 100 %}bg-success{% else %}bg-primary{% endif %}"
+                                                 role="progressbar"
+                                                 style="width: {{ course_data.percent }}%;"
+                                                 aria-valuenow="{{ course_data.percent }}"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="100%" class="text-center py-4 text-muted">
+                                У базі ще немає зареєстрованих студентів.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5 pt-4 border-top">
+        <h3 class="text-dark mb-4">📝 Перевірка практичних та лабораторних робіт</h3>
+
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-secondary">
+                                <tr>
+                                    <th class="ps-4">Студент</th>
+                                    <th>Курс / Назва роботи</th>
+                                    <th>Файл</th>
+                                    <th class="text-center" style="width: 350px;">Оцінювання (1-12 балів)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sub in all_submissions %}
+                                <tr>
+                                    <td class="ps-4 fw-bold">
+                                        👤 {{ sub.student.username }}
+                                        <div class="text-muted small fw-normal">{{ sub.submitted_at|date:"d.m.Y H:i" }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary mb-1">{{ sub.course.title }}</span><br>
+                                        {{ sub.lab_title }}
+                                    </td>
+                                    <td>
+                                        <a href="{{ sub.file.url }}" class="btn btn-sm btn-outline-dark" target="_blank" download>
+                                            💾 Завантажити файл
+                                        </a>
+                                    </td>
+
+                                    <td class="pe-4 py-3">
+                                        {% if sub.is_checked %}
+                                            <div id="view-mode-{{ sub.id }}" class="bg-light p-2 rounded border border-success">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="badge bg-success">Перевірено</span>
+                                                    <span class="fw-bold fs-5 text-success">{{ sub.grade }}/12</span>
+                                                </div>
+                                                <div class="small text-muted fst-italic mb-2">
+                                                    {% if sub.teacher_comment %}
+                                                        "{{ sub.teacher_comment }}"
+                                                    {% else %}
+                                                        <span class="text-muted text-decoration-underline" style="text-decoration-style: dotted;">Без коментаря</span>
+                                                    {% endif %}
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary w-100"
+                                                        onclick="document.getElementById('view-mode-{{ sub.id }}').style.display='none'; document.getElementById('edit-mode-{{ sub.id }}').style.display='block';">
+                                                    ✏️ Змінити оцінку
+                                                </button>
+                                            </div>
+
+                                            <form id="edit-mode-{{ sub.id }}" method="POST" action="{% url 'teacher_analytics' %}" class="bg-light p-2 rounded border border-primary" style="display: none;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="submission_id" value="{{ sub.id }}">
+
+                                                <div class="input-group input-group-sm mb-2">
+                                                    <span class="input-group-text bg-white fw-bold">Оцінка:</span>
+                                                    <input type="number" name="grade" class="form-control" min="1" max="12" value="{{ sub.grade }}" required>
+                                                </div>
+
+                                                <textarea name="comment" class="form-control form-control-sm mb-2" rows="2" placeholder="Коментар...">{{ sub.teacher_comment }}</textarea>
+
+                                                <div class="d-flex gap-1">
+                                                    <button type="submit" name="grade_submission" class="btn btn-sm btn-success w-100 fw-bold">
+                                                        ✅ Зберегти
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Скасувати"
+                                                            onclick="document.getElementById('edit-mode-{{ sub.id }}').style.display='none'; document.getElementById('view-mode-{{ sub.id }}').style.display='block';">
+                                                        ✖
+                                                    </button>
+                                                </div>
+                                            </form>
+
+                                        {% else %}
+                                            <form method="POST" action="{% url 'teacher_analytics' %}" class="bg-light p-2 rounded border border-warning">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="submission_id" value="{{ sub.id }}">
+
+                                                <div class="input-group input-group-sm mb-2">
+                                                    <span class="input-group-text bg-white fw-bold">Оцінка:</span>
+                                                    <input type="number" name="grade" class="form-control" min="1" max="12" required placeholder="1-12">
+                                                </div>
+
+                                                <textarea name="comment" class="form-control form-control-sm mb-2" rows="2" placeholder="Коментар для студента..."></textarea>
+
+                                                <button type="submit" name="grade_submission" class="btn btn-sm btn-success w-100 fw-bold">
+                                                    ✅ Оцінити
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        📭 Немає завантажених робіт від студентів.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

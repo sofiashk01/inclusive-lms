@@ -1,0 +1,79 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}Аналітика курсу - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-dark">Панель викладача: {{ course.title }}</h2>
+        <span class="badge bg-primary fs-6">Автор: {{ course.author.username }}</span>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger d-flex align-items-center mb-4 shadow-sm" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+        </svg>
+        <div>
+            <strong>Увага!</strong> {{ error }}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h4 class="card-title text-primary mb-3">Індекс інклюзивної доступності (I_inc)</h4>
+                    
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold">Рівень адаптації курсу:</span>
+                        <span class="fw-bold {% if i_inc >= 80 %}text-success{% else %}text-danger{% endif %}">{{ i_inc }}%</span>
+                    </div>
+                    
+                    <div class="progress mb-4" style="height: 30px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated 
+                                    {% if i_inc >= 80 %}bg-success{% elif i_inc >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ i_inc }}%;" 
+                             aria-valuenow="{{ i_inc }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ i_inc }}%
+                        </div>
+                    </div>
+
+                    <p class="text-muted small">
+                        * Відповідно до вимог системи, курс може бути опублікований для студентів лише за умови, що Індекс інклюзивності становить <strong>не менше 80%</strong>. Для підвищення індексу додайте до лекцій файли субтитрів, текстові транскрипти та налаштуйте візуальні сповіщення.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <h4 class="card-title mb-4">Статус курсу</h4>
+                    
+                    {% if course.is_published %}
+                        <div class="alert alert-success mb-4">
+                            <strong>ОПУБЛІКОВАНО</strong><br>Курс доступний студентам.
+                        </div>
+                       <a href="{% url 'admin:courses_course_change' course.id %}" class="btn btn-outline-secondary w-100" target="_blank">Редагувати матеріали ⚙️</a>
+                    {% else %}
+                        <div class="alert alert-secondary mb-4">
+                            <strong>ЧЕРНЕТКА</strong><br>Курс прихований.
+                        </div>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <button type="submit" name="publish_course" class="btn btn-primary w-100 btn-lg shadow-sm">
+                                Опублікувати курс
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
